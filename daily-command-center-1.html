@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f13;
+    --surface: #16181f;
+    --surface2: #1e2029;
+    --border: #2a2d38;
+    --teal: #00d4b8;
+    --orange: #ff6b35;
+    --gold: #f5c842;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --danger: #ff4757;
+    --success: #2ed573;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 100px;
+    overscroll-behavior: none;
+  }
+
+  /* HEADER */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(14,15,19,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left { display:flex; flex-direction:column; gap:2px; }
+  .header-title { font-family:'Bebas Neue'; font-size:22px; letter-spacing:2px; color:var(--teal); }
+  .header-date { font-size:11px; color:var(--muted); letter-spacing:0.5px; font-family:'JetBrains Mono'; }
+  .notif-btn {
+    background: var(--surface2); border:1px solid var(--border);
+    color: var(--text); border-radius:10px; padding:8px 12px;
+    font-size:12px; font-family:'DM Sans'; cursor:pointer;
+    display:flex; align-items:center; gap:6px;
+  }
+  .notif-btn.active { border-color:var(--teal); color:var(--teal); }
+
+  /* DAILY SCORE BAR */
+  .score-bar {
+    margin: 14px 16px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .score-ring {
+    width:52px; height:52px; flex-shrink:0;
+    position:relative;
+  }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring-label {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    font-family:'Bebas Neue'; font-size:16px; color:var(--teal);
+  }
+  .score-info { flex:1; }
+  .score-info h3 { font-size:13px; font-weight:600; margin-bottom:4px; }
+  .score-info p { font-size:11px; color:var(--muted); line-height:1.4; }
+  .score-pills { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+  .score-pill {
+    font-size:10px; font-family:'JetBrains Mono';
+    padding:2px 7px; border-radius:20px; border:1px solid;
+  }
+  .score-pill.routine { border-color:var(--teal); color:var(--teal); }
+  .score-pill.habits { border-color:var(--gold); color:var(--gold); }
+  .score-pill.fitness { border-color:var(--orange); color:var(--orange); }
+  .score-pill.nutrition { border-color:var(--success); color:var(--success); }
+  .score-pill.work { border-color:#a78bfa; color:#a78bfa; }
+
+  /* CARDS */
+  .cards { padding: 14px 16px; display:flex; flex-direction:column; gap:14px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .card.expanded { border-color: var(--border); }
+
+  .card-header {
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-header-left { display:flex; align-items:center; gap:10px; }
+  .card-icon {
+    width:34px; height:34px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; flex-shrink:0;
+  }
+  .card-icon.routine { background: rgba(0,212,184,0.15); }
+  .card-icon.habits  { background: rgba(245,200,66,0.15); }
+  .card-icon.fitness { background: rgba(255,107,53,0.15); }
+  .card-icon.nutrition { background: rgba(46,213,115,0.15); }
+  .card-icon.work    { background: rgba(167,139,250,0.15); }
+
+  .card-title { font-size:14px; font-weight:600; }
+  .card-subtitle { font-size:11px; color:var(--muted); margin-top:1px; }
+
+  .card-right { display:flex; align-items:center; gap:8px; }
+  .pct-badge {
+    font-family:'JetBrains Mono'; font-size:12px; font-weight:600;
+    padding:3px 8px; border-radius:20px;
+  }
+  .pct-badge.routine  { background:rgba(0,212,184,0.15); color:var(--teal); }
+  .pct-badge.habits   { background:rgba(245,200,66,0.15); color:var(--gold); }
+  .pct-badge.fitness  { background:rgba(255,107,53,0.15); color:var(--orange); }
+  .pct-badge.nutrition{ background:rgba(46,213,115,0.15); color:var(--success); }
+  .pct-badge.work     { background:rgba(167,139,250,0.15); color:#a78bfa; }
+
+  .chevron { font-size:12px; color:var(--muted); transition:transform 0.25s; }
+  .chevron.open { transform: rotate(180deg); }
+
+  .card-body {
+    display:none;
+    border-top:1px solid var(--border);
+    padding:14px 16px;
+    animation: fadeIn 0.2s ease;
+  }
+  .card-body.open { display:block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+
+  /* CHECKLIST */
+  .check-list { display:flex; flex-direction:column; gap:10px; }
+  .check-item {
+    display:flex; align-items:center; gap:12px;
+    padding:10px 12px;
+    background:var(--surface2); border-radius:10px;
+    cursor:pointer; transition:background 0.15s;
+    position:relative;
+  }
+  .check-item.done { opacity:0.6; }
+  .check-item.done .check-label { text-decoration:line-through; }
+  .check-box {
+    width:20px; height:20px; border-radius:6px; border:2px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition:all 0.15s; font-size:11px;
+  }
+  .check-item.done .check-box { background:var(--success); border-color:var(--success); }
+  .check-label { font-size:13px; flex:1; }
+  .check-note { font-size:10px; color:var(--muted); margin-top:2px; }
+
+  /* ADD ITEM */
+  .add-row {
+    display:flex; gap:8px; margin-top:12px;
+  }
+  .add-input {
+    flex:1; background:var(--surface2); border:1px solid var(--border);
+    color:var(--text); border-radius:10px; padding:10px 12px;
+    font-size:13px; font-family:'DM Sans'; outline:none;
+  }
+  .add-input:focus { border-color:var(--teal); }
+  .add-btn {
+    background:var(--teal); color:#0e0f13; border:none;
+    border-radius:10px; padding:10px 14px; font-size:18px;
+    cursor:pointer; font-weight:700; flex-shrink:0;
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap { margin-top:12px; }
+  .progress-label { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:6px; }
+  .progress-track {
+    height:6px; background:var(--surface2); border-radius:99px; overflow:hidden;
+  }
+  .progress-fill {
+    height:100%; border-radius:99px; transition:width 0.4s ease;
+  }
+  .progress-fill.routine   { background:var(--teal); }
+  .progress-fill.habits    { background:var(--gold); }
+  .progress-fill.fitness   { background:var(--orange); }
+  .progress-fill.nutrition { background:var(--success); }
+  .progress-fill.work      { background:#a78bfa; }
+
+  /* WEEKLY CHART */
+  .weekly-chart { margin-top:14px; }
+  .weekly-chart h4 { font-size:11px; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:10px; font-family:'JetBrains Mono'; }
+  .bar-chart { display:flex; align-items:flex-end; gap:6px; height:60px; }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; }
+  .bar-fill { width:100%; border-radius:4px 4px 0 0; min-height:4px; transition:height 0.4s; }
+  .bar-day { font-size:9px; color:var(--muted); font-family:'JetBrains Mono'; }
+
+  /* FITNESS SPECIFIC */
+  .workout-log { display:flex; flex-direction:column; gap:10px; }
+  .workout-entry {
+    background:var(--surface2); border-radius:10px; padding:12px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .workout-info h4 { font-size:13px; font-weight:600; }
+  .workout-info p { font-size:11px; color:var(--muted); margin-top:2px; }
+  .workout-duration { font-family:'JetBrains Mono'; font-size:13px; color:var(--orange); }
+  .delete-btn { color:var(--muted); font-size:16px; cursor:pointer; padding:4px 8px; }
+  .delete-btn:hover { color:var(--danger); }
+
+  .log-workout-form { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+  .form-row { display:flex; gap:8px; }
+  select.add-input { appearance:none; -webkit-appearance:none; }
+
+  .ai-suggest {
+    background:linear-gradient(135deg, rgba(255,107,53,0.1), rgba(255,107,53,0.05));
+    border:1px solid rgba(255,107,53,0.3);
+    border-radius:12px; padding:14px; margin-top:12px;
+  }
+  .ai-suggest h4 { font-size:12px; color:var(--orange); font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .suggest-list { display:flex; flex-direction:column; gap:8px; }
+  .suggest-item { font-size:12px; color:var(--text); display:flex; align-items:flex-start; gap:8px; line-height:1.4; }
+  .suggest-item::before { content:'→'; color:var(--orange); flex-shrink:0; }
+
+  /* NUTRITION DO/DON'T */
+  .nutrition-section h4 {
+    font-size:11px; letter-spacing:1px; text-transform:uppercase;
+    font-family:'JetBrains Mono'; margin-bottom:8px;
+  }
+  .nutrition-section h4.do  { color:var(--success); }
+  .nutrition-section h4.dont { color:var(--danger); }
+  .nutrition-section + .nutrition-section { margin-top:14px; }
+
+  /* WORK TASKS */
+  .task-item {
+    display:flex; align-items:flex-start; gap:10px;
+    padding:10px 12px; background:var(--surface2); border-radius:10px;
+    cursor:pointer;
+  }
+  .task-item.done { opacity:0.5; }
+  .task-item.done .check-label { text-decoration:line-through; }
+  .priority-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+  .priority-dot.high { background:var(--danger); }
+  .priority-dot.med  { background:var(--gold); }
+  .priority-dot.low  { background:var(--muted); }
+  .task-meta { font-size:10px; color:var(--muted); margin-top:3px; }
+
+  .task-form { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+
+  /* END OF DAY REVIEW */
+  .eod-card {
+    margin: 0 16px 14px;
+    background: linear-gradient(135deg, rgba(0,212,184,0.08), rgba(255,107,53,0.08));
+    border: 1px solid var(--teal);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .eod-card.locked { border-color:var(--border); opacity:0.6; }
+  .eod-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .eod-title { font-family:'Bebas Neue'; font-size:20px; letter-spacing:2px; color:var(--teal); }
+  .eod-time { font-size:11px; color:var(--muted); font-family:'JetBrains Mono'; }
+  .eod-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+  .eod-stat {
+    background:var(--surface); border-radius:10px; padding:10px;
+    text-align:center;
+  }
+  .eod-stat-val { font-family:'JetBrains Mono'; font-size:18px; font-weight:600; }
+  .eod-stat-label { font-size:10px; color:var(--muted); margin-top:2px; }
+  .eod-reflection { margin-bottom:12px; }
+  .eod-reflection label { font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
+  textarea.add-input { resize:none; height:80px; line-height:1.5; }
+  .eod-top3 { margin-bottom:12px; }
+  .eod-top3 label { font-size:12px; color:var(--muted); display:block; margin-bottom:8px; }
+  .top3-list { display:flex; flex-direction:column; gap:6px; }
+  .top3-item { display:flex; gap:8px; align-items:center; }
+  .top3-num { font-family:'Bebas Neue'; font-size:18px; color:var(--teal); width:18px; flex-shrink:0; }
+  .save-eod-btn {
+    width:100%; background:var(--teal); color:#0e0f13;
+    border:none; border-radius:10px; padding:12px;
+    font-size:14px; font-weight:700; font-family:'DM Sans';
+    cursor:pointer; letter-spacing:0.5px;
+  }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position:fixed; bottom:0; left:0; right:0;
+    background:rgba(14,15,19,0.97); backdrop-filter:blur(14px);
+    border-top:1px solid var(--border);
+    display:flex; padding:10px 0 calc(10px + env(safe-area-inset-bottom));
+    z-index:100;
+  }
+  .nav-item {
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    cursor:pointer; padding:4px 0;
+    transition:color 0.15s;
+    color:var(--muted); font-size:10px; font-family:'JetBrains Mono';
+  }
+  .nav-item.active { color:var(--teal); }
+  .nav-icon { font-size:20px; }
+
+  /* TOAST */
+  .toast {
+    position:fixed; top:80px; left:50%; transform:translateX(-50%) translateY(-20px);
+    background:var(--surface2); border:1px solid var(--teal); color:var(--teal);
+    padding:10px 18px; border-radius:20px; font-size:12px;
+    font-family:'JetBrains Mono'; white-space:nowrap;
+    opacity:0; transition:all 0.25s; z-index:200; pointer-events:none;
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* PROFILE MODAL */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7);
+    z-index:300; backdrop-filter:blur(4px);
+    align-items:flex-end; justify-content:center;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:20px 20px 0 0; padding:20px;
+    width:100%; max-height:80vh; overflow-y:auto;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from{transform:translateY(40px)} to{transform:translateY(0)} }
+  .modal h2 { font-family:'Bebas Neue'; font-size:22px; letter-spacing:2px; color:var(--teal); margin-bottom:16px; }
+  .modal-close {
+    float:right; background:none; border:none; color:var(--muted);
+    font-size:20px; cursor:pointer; margin-top:-4px;
+  }
+  .form-group { margin-bottom:14px; }
+  .form-group label { font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
+  .save-profile-btn {
+    width:100%; background:var(--teal); color:#0e0f13;
+    border:none; border-radius:10px; padding:12px;
+    font-size:14px; font-weight:700; font-family:'DM Sans'; cursor:pointer;
+    margin-top:4px;
+  }
+
+  /* STATS VIEW */
+  #stats-view { display:none; padding:16px; }
+  #stats-view.active { display:block; }
+  .stats-title { font-family:'Bebas Neue'; font-size:28px; letter-spacing:3px; color:var(--teal); margin-bottom:16px; }
+  .stats-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .stats-card h3 { font-size:13px; font-weight:600; margin-bottom:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; font-family:'JetBrains Mono'; font-size:11px; }
+
+  /* MAIN VIEW */
+  #main-view { display:block; }
+  #main-view.hidden { display:none; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">⚡ COMMAND CENTER</div>
+    <div class="header-date" id="headerDate">—</div>
+  </div>
+  <button class="notif-btn" id="notifBtn" onclick="toggleNotifications()">🔔 Alerts</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MAIN VIEW -->
+<div id="main-view">
+  <!-- DAILY SCORE -->
+  <div class="score-bar">
+    <div class="score-ring">
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="20" fill="none" stroke="#2a2d38" stroke-width="5"/>
+        <circle cx="26" cy="26" r="20" fill="none" stroke="#00d4b8" stroke-width="5"
+          stroke-dasharray="125.6" id="scoreCircle" stroke-dashoffset="125.6" stroke-linecap="round"/>
+      </svg>
+      <div class="score-ring-label" id="scoreLabel">0%</div>
+    </div>
+    <div class="score-info">
+      <h3>Today's Progress</h3>
+      <p id="scoreMessage">Start checking off your tasks!</p>
+      <div class="score-pills">
+        <span class="score-pill routine" id="pill-routine">Routine 0%</span>
+        <span class="score-pill habits" id="pill-habits">Habits 0%</span>
+        <span class="score-pill fitness" id="pill-fitness">Fitness 0%</span>
+        <span class="score-pill nutrition" id="pill-nutrition">Nutrition 0%</span>
+        <span class="score-pill work" id="pill-work">Work 0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards">
+
+    <!-- DAILY ROUTINE CARD -->
+    <div class="card" id="card-routine">
+      <div class="card-header" onclick="toggleCard('routine')">
+        <div class="card-header-left">
+          <div class="card-icon routine">🌅</div>
+          <div>
+            <div class="card-title">Daily Routine</div>
+            <div class="card-subtitle">Morning startup habits</div>
+          </div>
+        </div>
+        <div class="card-right">
+          <span class="pct-badge routine" id="badge-routine">0%</span>
+          <span class="chevron" id="chev-routine">▼</span>
+        </div>
+      </div>
+      <div class="card-body" id="body-routine">
+        <div class="check-list" id="list-routine"></div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Completion</span><span id="prog-label-routine">0 / 0</span></div>
+          <div class="progress-track"><div class="progress-fill routine" id="prog-routine" style="width:0%"></div></div>
+        </div>
+        <div class="add-row" style="margin-top:12px;">
+          <input class="add-input" id="input-routine" placeholder="Add routine item..." />
+          <button class="add-btn" onclick="addItem('routine')">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HABITS CARD -->
+    <div class="card" id="card-habits">
+      <div class="card-header" onclick="toggleCard('habits')">
+        <div class="card-header-left">
+          <div class="card-icon habits">🔥</div>
+          <div>
+            <div class="card-title">Habits</div>
+            <div class="card-subtitle">Build consistency</div>
+          </div>
+        </div>
+        <div class="card-right">
+          <span class="pct-badge habits" id="badge-habits">0%</span>
+          <span class="chevron" id="chev-habits">▼</span>
+        </div>
+      </div>
+      <div class="card-body" id="body-habits">
+        <div class="check-list" id="list-habits"></div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Today</span><span id="prog-label-habits">0 / 0</span></div>
+          <div class="progress-track"><div class="progress-fill habits" id="prog-habits" style="width:0%"></div></div>
+        </div>
+        <div class="weekly-chart">
+          <h4>This Week</h4>
+          <div class="bar-chart" id="chart-habits"></div>
+        </div>
+        <div class="add-row">
+          <input class="add-input" id="input-habits" placeholder="Add new habit..." />
+          <button class="add-btn" style="background:var(--gold);" onclick="addItem('habits')">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FITNESS CARD -->
+    <div class="card" id="card-fitness">
+      <div class="card-header" onclick="toggleCard('fitness')">
+        <div class="card-header-left">
+          <div class="card-icon fitness">💪</div>
+          <div>
+            <div class="card-title">Fitness</div>
+            <div class="card-subtitle">Workouts & movement</div>
+          </div>
+        </div>
+        <div class="card-right">
+          <span class="pct-badge fitness" id="badge-fitness">—</span>
+          <span class="chevron" id="chev-fitness">▼</span>
+        </div>
+      </div>
+      <div class="card-body" id="body-fitness">
+        <div class="workout-log" id="workout-log"></div>
+        <div class="log-workout-form">
+          <div class="form-row">
+            <select class="add-input" id="workout-type">
+              <option value="">Type...</option>
+              <option>Strength Training</option>
+              <option>Cardio</option>
+              <option>HIIT</option>
+              <option>Mobility / Yoga</option>
+              <option>Walk / Run</option>
+              <option>Cycling</option>
+              <option>Swimming</option>
+              <option>Other</option>
+            </select>
+            <input class="add-input" id="workout-duration" type="number" placeholder="Min" style="width:70px;flex:none;" />
+          </div>
+          <button class="add-btn" style="background:var(--orange);color:#fff;width:100%;border-radius:10px;padding:10px;font-size:13px;font-weight:600;" onclick="logWorkout()">+ Log Workout</button>
+        </div>
+        <div class="ai-suggest" id="ai-suggest">
+          <h4>✦ AI Suggestions</h4>
+          <div class="suggest-list" id="suggest-list">
+            <div class="suggest-item">Set your fitness profile (tap ⚙️) to get personalized workout suggestions.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NUTRITION CARD -->
+    <div class="card" id="card-nutrition">
+      <div class="card-header" onclick="toggleCard('nutrition')">
+        <div class="card-header-left">
+          <div class="card-icon nutrition">🥗</div>
+          <div>
+            <div class="card-title">Nutrition</div>
+            <div class="card-subtitle">Daily do's & don'ts</div>
+          </div>
+        </div>
+        <div class="card-right">
+          <span class="pct-badge nutrition" id="badge-nutrition">0%</span>
+          <span class="chevron" id="chev-nutrition">▼</span>
+        </div>
+      </div>
+      <div class="card-body" id="body-nutrition">
+        <div class="nutrition-section">
+          <h4 class="do">✅ DO's</h4>
+          <div class="check-list" id="list-nutrition-do"></div>
+          <div class="add-row" style="margin-top:8px;">
+            <input class="add-input" id="input-nutrition-do" placeholder="Add a do..." />
+            <button class="add-btn" style="background:var(--success);" onclick="addNutrition('do')">+</button>
+          </div>
+        </div>
+        <div class="nutrition-section">
+          <h4 class="dont">🚫 DON'Ts</h4>
+          <div class="check-list" id="list-nutrition-dont"></div>
+          <div class="add-row" style="margin-top:8px;">
+            <input class="add-input" id="input-nutrition-dont" placeholder="Add a don't..." />
+            <button class="add-btn" style="background:var(--danger);" onclick="addNutrition('dont')">+</button>
+          </div>
+        </div>
+        <div class="progress-wrap" style="margin-top:14px;">
+          <div class="progress-label"><span>Adherence</span><span id="prog-label-nutrition">0 / 0</span></div>
+          <div class="progress-track"><div class="progress-fill nutrition" id="prog-nutrition" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORK CARD -->
+    <div class="card" id="card-work">
+      <div class="card-header" onclick="toggleCard('work')">
+        <div class="card-header-left">
+          <div class="card-icon work">💼</div>
+          <div>
+            <div class="card-title">Work & Professional</div>
+            <div class="card-subtitle">Tasks & priorities</div>
+          </div>
+        </div>
+        <div class="card-right">
+          <span class="pct-badge work" id="badge-work">0%</span>
+          <span class="chevron" id="chev-work">▼</span>
+        </div>
+      </div>
+      <div class="card-body" id="body-work">
+        <div class="check-list" id="list-work"></div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Completed</span><span id="prog-label-work">0 / 0</span></div>
+          <div class="progress-track"><div class="progress-fill work" id="prog-work" style="width:0%"></div></div>
+        </div>
+        <div class="task-form">
+          <input class="add-input" id="input-work" placeholder="Add task..." />
+          <div class="form-row">
+            <select class="add-input" id="work-priority">
+              <option value="high">🔴 High Priority</option>
+              <option value="med" selected>🟡 Medium Priority</option>
+              <option value="low">⚫ Low Priority</option>
+            </select>
+            <input class="add-input" id="work-time" type="time" style="width:110px;flex:none;" />
+          </div>
+          <button class="add-btn" style="background:#a78bfa;color:#0e0f13;width:100%;border-radius:10px;padding:10px;font-size:13px;font-weight:600;" onclick="addWorkTask()">+ Add Task</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /cards -->
+
+  <!-- END OF DAY REVIEW -->
+  <div class="eod-card locked" id="eodCard">
+    <div class="eod-header">
+      <div class="eod-title">END OF DAY REVIEW</div>
+      <div class="eod-time" id="eodTime">Unlocks at 6:00 PM</div>
+    </div>
+    <div id="eodLocked" style="text-align:center;padding:10px 0;">
+      <div style="font-size:32px;margin-bottom:8px;">🔒</div>
+      <div style="font-size:12px;color:var(--muted);">Your daily review will be available this evening.<br>Keep building momentum!</div>
+    </div>
+    <div id="eodOpen" style="display:none;">
+      <div class="eod-grid" id="eodGrid"></div>
+      <div class="eod-reflection">
+        <label>📝 What went well today?</label>
+        <textarea class="add-input" id="eodReflection" placeholder="Reflect on your wins..."></textarea>
+      </div>
+      <div class="eod-top3">
+        <label>🎯 Tomorrow's Top 3 Priorities</label>
+        <div class="top3-list">
+          <div class="top3-item"><span class="top3-num">1</span><input class="add-input" id="top3-1" placeholder="Most important task..." /></div>
+          <div class="top3-item"><span class="top3-num">2</span><input class="add-input" id="top3-2" placeholder="Second priority..." /></div>
+          <div class="top3-item"><span class="top3-num">3</span><input class="add-input" id="top3-3" placeholder="Third priority..." /></div>
+        </div>
+      </div>
+      <button class="save-eod-btn" onclick="saveEOD()">Save Today's Review ✓</button>
+    </div>
+  </div>
+
+</div><!-- /main-view -->
+
+<!-- STATS VIEW -->
+<div id="stats-view">
+  <div class="stats-title">📊 YOUR STATS</div>
+  <div class="stats-card">
+    <h3>Weekly Completion Rates</h3>
+    <div id="statsWeekly"></div>
+  </div>
+  <div class="stats-card">
+    <h3>Last 5 End-of-Day Reviews</h3>
+    <div id="statsEOD" style="font-size:13px;color:var(--muted);"></div>
+  </div>
+  <div class="stats-card" id="statsTop3Card">
+    <h3>Tomorrow's Top 3</h3>
+    <div id="statsTop3" style="font-size:13px;"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="switchView('home')">
+    <span class="nav-icon">🏠</span>Today
+  </div>
+  <div class="nav-item" id="nav-stats" onclick="switchView('stats')">
+    <span class="nav-icon">📊</span>Stats
+  </div>
+  <div class="nav-item" id="nav-profile" onclick="openProfile()">
+    <span class="nav-icon">⚙️</span>Profile
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeProfile()">✕</button>
+    <h2>Your Profile</h2>
+    <div class="form-group">
+      <label>Your Name</label>
+      <input class="add-input" id="prof-name" placeholder="Enter your name..." />
+    </div>
+    <div class="form-group">
+      <label>Fitness Goal</label>
+      <select class="add-input" id="prof-goal">
+        <option>Build Muscle</option>
+        <option>Lose Weight</option>
+        <option>Improve Endurance</option>
+        <option>General Fitness</option>
+        <option>Flexibility & Mobility</option>
+        <option>Athletic Performance</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Fitness Level</label>
+      <select class="add-input" id="prof-level">
+        <option>Beginner</option>
+        <option>Intermediate</option>
+        <option>Advanced</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Equipment Available</label>
+      <select class="add-input" id="prof-equip">
+        <option>None (Bodyweight only)</option>
+        <option>Dumbbells / Resistance Bands</option>
+        <option>Full Gym Access</option>
+        <option>Home Gym Setup</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Workout Days Per Week</label>
+      <select class="add-input" id="prof-days">
+        <option>2–3 days</option>
+        <option>4–5 days</option>
+        <option>6–7 days</option>
+      </select>
+    </div>
+    <button class="save-profile-btn" onclick="saveProfile()">Save Profile</button>
+  </div>
+</div>
+
+<script>
+// =====================
+// STATE
+// =====================
+let state = {
+  date: new Date().toDateString(),
+  routine: [],
+  habits: [],
+  workouts: [],
+  nutritionDo: [],
+  nutritionDont: [],
+  tasks: [],
+  eod: null,
+  history: {}, // keyed by date, stores completion %s
+  profile: {},
+  notifications: false
+};
+
+// =====================
+// PERSISTENCE
+// =====================
+function save() { localStorage.setItem('cmdcenter_v2', JSON.stringify(state)); }
+
+function load() {
+  const raw = localStorage.getItem('cmdcenter_v2');
+  if (raw) {
+    try {
+      const saved = JSON.parse(raw);
+      // Reset today's check states if new day
+      if (saved.date !== new Date().toDateString()) {
+        // Archive yesterday
+        const yesterday = saved.date;
+        saved.history[yesterday] = computeScores(saved);
+        // Reset done flags
+        saved.routine.forEach(i=>i.done=false);
+        saved.habits.forEach(i=>i.done=false);
+        saved.nutritionDo.forEach(i=>i.done=false);
+        saved.nutritionDont.forEach(i=>i.done=false);
+        saved.tasks.forEach(i=>i.done=false);
+        saved.workouts = [];
+        saved.eod = null;
+        saved.date = new Date().toDateString();
+      }
+      state = saved;
+    } catch(e) {}
+  }
+}
+
+function computeScores(s) {
+  const pct = arr => arr.length ? Math.round(arr.filter(i=>i.done).length/arr.length*100) : 0;
+  return {
+    routine: pct(s.routine),
+    habits: pct(s.habits),
+    fitness: s.workouts.length > 0 ? 100 : 0,
+    nutrition: pct([...s.nutritionDo, ...s.nutritionDont]),
+    work: pct(s.tasks)
+  };
+}
+
+// =====================
+// INIT
+// =====================
+function init() {
+  load();
+  setDefaults();
+  renderAll();
+  updateHeader();
+  checkEOD();
+  scheduleReminders();
+  updateSuggestions();
+
+  // Refresh every minute for EOD unlock
+  setInterval(() => { checkEOD(); updateHeader(); }, 60000);
+  // Reminder check every 5 min
+  setInterval(checkReminders, 300000);
+}
+
+function setDefaults() {
+  if (state.routine.length === 0) {
+    state.routine = [
+      { id: uid(), text: 'Drink a full glass of water', done: false },
+      { id: uid(), text: 'Morning stretch (5 min)', done: false },
+      { id: uid(), text: 'Review today\'s top priorities', done: false },
+      { id: uid(), text: 'Mindful breathing (2 min)', done: false },
+    ];
+  }
+  if (state.nutritionDo.length === 0) {
+    state.nutritionDo = [
+      { id: uid(), text: 'Drink 8 glasses of water', done: false },
+      { id: uid(), text: 'Eat vegetables with lunch & dinner', done: false },
+      { id: uid(), text: 'Eat breakfast within 1 hr of waking', done: false },
+    ];
+  }
+  if (state.nutritionDont.length === 0) {
+    state.nutritionDont = [
+      { id: uid(), text: 'No soda or sugary drinks', done: false },
+      { id: uid(), text: 'No late-night eating after 9pm', done: false },
+    ];
+  }
+  save();
+}
+
+function uid() { return Math.random().toString(36).substr(2,9); }
+
+// =====================
+// HEADER
+// =====================
+function updateHeader() {
+  const d = new Date();
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('headerDate').textContent =
+    `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()} · ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
+
+  // Greeting if profile set
+  const name = state.profile.name;
+  if (name) {
+    document.querySelector('.header-title').textContent = `⚡ HEY ${name.toUpperCase().split(' ')[0]}`;
+  }
+}
+
+// =====================
+// RENDER
+// =====================
+function renderAll() {
+  renderChecklist('routine', state.routine);
+  renderChecklist('habits', state.habits);
+  renderWorkouts();
+  renderNutrition();
+  renderTasks();
+  updateScores();
+  renderWeeklyChart();
+}
+
+function renderChecklist(type, items) {
+  const el = document.getElementById(`list-${type}`);
+  if (!el) return;
+  el.innerHTML = '';
+  if (items.length === 0) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">Tap + to add items</div>`;
+    return;
+  }
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = `check-item${item.done?' done':''}`;
+    div.innerHTML = `<div class="check-box">${item.done?'✓':''}</div><div class="check-label">${item.text}</div>`;
+    div.onclick = () => toggleItem(type, item.id);
+    el.appendChild(div);
+  });
+}
+
+function renderNutrition() {
+  const doEl = document.getElementById('list-nutrition-do');
+  const dontEl = document.getElementById('list-nutrition-dont');
+  [doEl, dontEl].forEach(el => { if(el) el.innerHTML=''; });
+
+  state.nutritionDo.forEach(item => {
+    const div = document.createElement('div');
+    div.className = `check-item${item.done?' done':''}`;
+    div.innerHTML = `<div class="check-box" style="${item.done?'background:var(--success);border-color:var(--success)':''}">${item.done?'✓':''}</div><div class="check-label">${item.text}</div>`;
+    div.onclick = () => toggleNutrition('do', item.id);
+    doEl.appendChild(div);
+  });
+
+  state.nutritionDont.forEach(item => {
+    const div = document.createElement('div');
+    div.className = `check-item${item.done?' done':''}`;
+    div.innerHTML = `<div class="check-box" style="${item.done?'background:var(--danger);border-color:var(--danger)':''}">${item.done?'✓':''}</div><div class="check-label">${item.text}</div>`;
+    div.onclick = () => toggleNutrition('dont', item.id);
+    dontEl.appendChild(div);
+  });
+}
+
+function renderWorkouts() {
+  const el = document.getElementById('workout-log');
+  el.innerHTML = '';
+  if (state.workouts.length === 0) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">No workouts logged today</div>`;
+    return;
+  }
+  state.workouts.forEach((w,i) => {
+    const div = document.createElement('div');
+    div.className = 'workout-entry';
+    div.innerHTML = `
+      <div class="workout-info">
+        <h4>${w.type}</h4>
+        <p>${new Date(w.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="workout-duration">${w.duration} min</div>
+        <div class="delete-btn" onclick="deleteWorkout(${i})">✕</div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderTasks() {
+  const el = document.getElementById('list-work');
+  el.innerHTML = '';
+  const priorities = {high:'🔴',med:'🟡',low:'⚫'};
+  if (state.tasks.length === 0) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">No tasks yet — add one below</div>`;
+    return;
+  }
+  // Sort: high first, then undone first
+  const sorted = [...state.tasks].sort((a,b) => {
+    const po = {high:0,med:1,low:2};
+    if(a.done !== b.done) return a.done?1:-1;
+    return po[a.priority]-po[b.priority];
+  });
+  sorted.forEach(task => {
+    const div = document.createElement('div');
+    div.className = `check-item${task.done?' done':''}`;
+    div.innerHTML = `
+      <div class="check-box">${task.done?'✓':''}</div>
+      <div style="flex:1;">
+        <div class="check-label">${task.text}</div>
+        <div class="task-meta">${priorities[task.priority]} ${task.priority.charAt(0).toUpperCase()+task.priority.slice(1)}${task.time?' · '+task.time:''}</div>
+      </div>`;
+    div.onclick = () => toggleTask(task.id);
+    el.appendChild(div);
+  });
+}
+
+// =====================
+// SCORES
+// =====================
+function updateScores() {
+  const pct = (arr) => arr.length ? Math.round(arr.filter(i=>i.done).length/arr.length*100) : 0;
+
+  const routinePct = pct(state.routine);
+  const habitsPct  = pct(state.habits);
+  const fitnessPct = state.workouts.length > 0 ? 100 : 0;
+  const allNutrition = [...state.nutritionDo, ...state.nutritionDont];
+  const nutritionPct = pct(allNutrition);
+  const workPct    = pct(state.tasks);
+
+  const scores = [routinePct, habitsPct, fitnessPct, nutritionPct, workPct];
+  const overall = Math.round(scores.reduce((a,b)=>a+b,0) / scores.length);
+
+  // Ring
+  const circ = 125.6;
+  document.getElementById('scoreCircle').style.strokeDashoffset = circ - (circ * overall/100);
+  document.getElementById('scoreLabel').textContent = overall+'%';
+
+  const msgs = ['Start checking off your tasks!','Good start — keep moving!','Halfway there — solid progress!','Strong day — almost there!','🔥 Incredible day — crushed it!'];
+  document.getElementById('scoreMessage').textContent = msgs[Math.floor(overall/25)];
+
+  // Badges
+  document.getElementById('badge-routine').textContent = routinePct+'%';
+  document.getElementById('badge-habits').textContent  = habitsPct+'%';
+  document.getElementById('badge-fitness').textContent = state.workouts.length ? `${state.workouts.length} logged` : '—';
+  document.getElementById('badge-nutrition').textContent = nutritionPct+'%';
+  document.getElementById('badge-work').textContent    = workPct+'%';
+
+  // Pills
+  document.getElementById('pill-routine').textContent = `Routine ${routinePct}%`;
+  document.getElementById('pill-habits').textContent  = `Habits ${habitsPct}%`;
+  document.getElementById('pill-fitness').textContent = `Fitness ${fitnessPct}%`;
+  document.getElementById('pill-nutrition').textContent = `Nutrition ${nutritionPct}%`;
+  document.getElementById('pill-work').textContent    = `Work ${workPct}%`;
+
+  // Progress bars
+  setProgress('routine', routinePct, state.routine);
+  setProgress('habits', habitsPct, state.habits);
+  setProgress('nutrition', nutritionPct, allNutrition);
+  setProgress('work', workPct, state.tasks);
+}
+
+function setProgress(type, pct, arr) {
+  const bar = document.getElementById(`prog-${type}`);
+  const lbl = document.getElementById(`prog-label-${type}`);
+  if(bar) bar.style.width = pct+'%';
+  if(lbl && arr) lbl.textContent = `${arr.filter(i=>i.done).length} / ${arr.length}`;
+}
+
+// =====================
+// INTERACTIONS
+// =====================
+function toggleCard(id) {
+  const body = document.getElementById(`body-${id}`);
+  const chev = document.getElementById(`chev-${id}`);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function toggleItem(type, id) {
+  const arr = state[type];
+  const item = arr.find(i=>i.id===id);
+  if(item) { item.done = !item.done; save(); renderChecklist(type,arr); updateScores(); }
+}
+
+function toggleNutrition(sub, id) {
+  const arr = sub==='do' ? state.nutritionDo : state.nutritionDont;
+  const item = arr.find(i=>i.id===id);
+  if(item) { item.done = !item.done; save(); renderNutrition(); updateScores(); }
+}
+
+function toggleTask(id) {
+  const task = state.tasks.find(t=>t.id===id);
+  if(task) { task.done = !task.done; save(); renderTasks(); updateScores(); }
+}
+
+function addItem(type) {
+  const input = document.getElementById(`input-${type}`);
+  const text = input.value.trim();
+  if(!text) return;
+  state[type].push({ id: uid(), text, done: false });
+  input.value = '';
+  save();
+  renderChecklist(type, state[type]);
+  updateScores();
+  toast(`Added to ${type}!`);
+}
+
+function addNutrition(sub) {
+  const input = document.getElementById(`input-nutrition-${sub}`);
+  const text = input.value.trim();
+  if(!text) return;
+  const arr = sub==='do' ? state.nutritionDo : state.nutritionDont;
+  arr.push({ id: uid(), text, done: false });
+  input.value = '';
+  save(); renderNutrition(); updateScores();
+  toast('Added to nutrition!');
+}
+
+function addWorkTask() {
+  const text = document.getElementById('input-work').value.trim();
+  const priority = document.getElementById('work-priority').value;
+  const time = document.getElementById('work-time').value;
+  if(!text) return;
+  state.tasks.push({ id: uid(), text, priority, time, done: false });
+  document.getElementById('input-work').value = '';
+  document.getElementById('work-time').value = '';
+  save(); renderTasks(); updateScores();
+  toast('Task added!');
+}
+
+function logWorkout() {
+  const type = document.getElementById('workout-type').value;
+  const dur  = document.getElementById('workout-duration').value;
+  if(!type || !dur) { toast('Select type & duration'); return; }
+  state.workouts.push({ type, duration: dur, time: Date.now() });
+  document.getElementById('workout-type').value = '';
+  document.getElementById('workout-duration').value = '';
+  save(); renderWorkouts(); updateScores(); updateSuggestions();
+  toast(`${type} logged! 💪`);
+}
+
+function deleteWorkout(i) {
+  state.workouts.splice(i,1);
+  save(); renderWorkouts(); updateScores();
+}
+
+// =====================
+// AI SUGGESTIONS
+// =====================
+function updateSuggestions() {
+  const p = state.profile;
+  const list = document.getElementById('suggest-list');
+  const goal = p.goal || '';
+  const level = p.level || 'Beginner';
+  const equip = p.equip || 'None (Bodyweight only)';
+  const todayTypes = state.workouts.map(w=>w.type);
+
+  const suggestions = getSuggestions(goal, level, equip, todayTypes);
+  list.innerHTML = suggestions.map(s=>`<div class="suggest-item">${s}</div>`).join('');
+}
+
+function getSuggestions(goal, level, equip, done) {
+  const isGym = equip.includes('Full Gym') || equip.includes('Home Gym');
+  const isDumbs = equip.includes('Dumbbell');
+
+  const pools = {
+    'Build Muscle': {
+      Beginner:     ['3×10 push-ups + 3×12 bodyweight squats','3×10 dumbbell rows (if available) + 3×15 glute bridges','Focus on form: slow 3-second lowering on all reps'],
+      Intermediate: ['4×8 bench press or floor press','3×10 Romanian deadlifts + 3×12 lat pulldowns','Superset: bicep curls + tricep dips × 3'],
+      Advanced:     ['Heavy compound: 5×5 squat or deadlift','Push-pull-legs split — prioritize progressive overload','Track weight & reps weekly to ensure progression']
+    },
+    'Lose Weight': {
+      Beginner:     ['20 min brisk walk + 3×15 bodyweight squats','Tabata: 20s on / 10s off × 8 rounds (jumping jacks, squats)','Start with 2 cardio days + 1 strength day this week'],
+      Intermediate: ['30 min HIIT circuit: burpees, mountain climbers, jump squats','Strength + cardio combo: 3 lifts then 15 min run','Keep rest periods under 60s to maximize calorie burn'],
+      Advanced:     ['EMOM (Every Minute on the Minute): 10 kettlebell swings','5k run or 45 min cycling at moderate intensity','Superset all exercises — zero rest between pairs']
+    },
+    'Improve Endurance': {
+      Beginner:     ['20 min easy walk/jog — conversational pace','Bodyweight circuit: 10 reps each, 3 rounds, 45s rest','Add 5 min to your cardio session each week'],
+      Intermediate: ['30 min tempo run at 70–80% max effort','Cycling or rowing 40 min at steady state','Stair climbs or hill walks for 20 min'],
+      Advanced:     ['Long run 60+ min at comfortable pace','Interval training: 400m repeats × 8','Cross-train: swim 1,000m or cycle 45 min']
+    },
+    'General Fitness': {
+      Beginner:     ['Full body: 3×10 squats, push-ups, rows, lunges','20 min walk + 10 min stretching','Focus on daily movement — any activity counts'],
+      Intermediate: ['3-day full body: Mon/Wed/Fri','Yoga or mobility session today (30 min)','Active rest: 30 min walk or light bike ride'],
+      Advanced:     ['Olympic lift technique work + accessory movements','Sport-specific training or functional fitness WOD','Active recovery: foam roll + dynamic stretching 20 min']
+    },
+    'Flexibility & Mobility': {
+      Beginner:     ['10 min morning yoga flow (sun salutations)','Hip flexor + hamstring stretching sequence × 3','Foam roll: quads, IT band, upper back — 30s each'],
+      Intermediate: ['Yin yoga 30 min — hold each pose 3–5 min','Dynamic warm-up: leg swings, arm circles, hip circles','Pigeon pose + spinal twist sequence'],
+      Advanced:     ['Full splits progression routine','Advanced hip mobility: 90/90 + deep squat holds','Handstand or shoulder flexibility work 20 min']
+    }
+  };
+
+  const key = goal in pools ? goal : 'General Fitness';
+  const lvlKey = level in pools[key] ? level : 'Beginner';
+  let suggestions = pools[key][lvlKey] || [];
+
+  if(done.length > 0) {
+    suggestions = [`Great job logging ${done.join(', ')} today!`, ...suggestions.slice(0,2)];
+  }
+
+  return suggestions.slice(0,3);
+}
+
+// =====================
+// EOD REVIEW
+// =====================
+function checkEOD() {
+  const hour = new Date().getHours();
+  const isEvening = hour >= 18;
+  const card = document.getElementById('eodCard');
+  const locked = document.getElementById('eodLocked');
+  const open = document.getElementById('eodOpen');
+  const timeEl = document.getElementById('eodTime');
+
+  if (isEvening) {
+    card.classList.remove('locked');
+    locked.style.display = 'none';
+    open.style.display = 'block';
+    timeEl.textContent = 'Review time! 🌙';
+    buildEODStats();
+    loadEODSaved();
+  } else {
+    const remaining = 18 - new Date().getHours();
+    timeEl.textContent = `Unlocks in ~${remaining}h`;
+  }
+}
+
+function buildEODStats() {
+  const scores = computeScores(state);
+  const grid = document.getElementById('eodGrid');
+  const items = [
+    {label:'Routine',val:scores.routine+'%',color:'var(--teal)'},
+    {label:'Habits',val:scores.habits+'%',color:'var(--gold)'},
+    {label:'Fitness',val:state.workouts.length+' logged',color:'var(--orange)'},
+    {label:'Nutrition',val:scores.nutrition+'%',color:'var(--success)'},
+    {label:'Work',val:scores.work+'%',color:'#a78bfa'},
+    {label:'Overall',val:Math.round(Object.values(scores).reduce((a,b)=>a+b,0)/5)+'%',color:'var(--teal)'}
+  ];
+  grid.innerHTML = items.map(i=>`
+    <div class="eod-stat">
+      <div class="eod-stat-val" style="color:${i.color}">${i.val}</div>
+      <div class="eod-stat-label">${i.label}</div>
+    </div>`).join('');
+}
+
+function loadEODSaved() {
+  if(state.eod) {
+    document.getElementById('eodReflection').value = state.eod.reflection || '';
+    document.getElementById('top3-1').value = state.eod.top3?.[0] || '';
+    document.getElementById('top3-2').value = state.eod.top3?.[1] || '';
+    document.getElementById('top3-3').value = state.eod.top3?.[2] || '';
+  }
+}
+
+function saveEOD() {
+  state.eod = {
+    date: new Date().toDateString(),
+    reflection: document.getElementById('eodReflection').value,
+    top3: [
+      document.getElementById('top3-1').value,
+      document.getElementById('top3-2').value,
+      document.getElementById('top3-3').value
+    ],
+    scores: computeScores(state)
+  };
+  // Archive to history
+  state.history[state.date] = state.eod.scores;
+  save();
+  toast('Review saved! Great work today 🙌');
+}
+
+// =====================
+// WEEKLY CHART
+// =====================
+function renderWeeklyChart() {
+  const chart = document.getElementById('chart-habits');
+  if(!chart) return;
+  const days = ['S','M','T','W','T','F','S'];
+  const today = new Date().getDay();
+  chart.innerHTML = '';
+  for(let i=0;i<7;i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - (today - i));
+    const key = d.toDateString();
+    let pct = 0;
+    if(key === state.date) {
+      pct = state.habits.length ? Math.round(state.habits.filter(h=>h.done).length/state.habits.length*100) : 0;
+    } else if(state.history[key]) {
+      pct = state.history[key].habits || 0;
+    }
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    const isToday = i === today;
+    col.innerHTML = `
+      <div class="bar-fill" style="height:${Math.max(4,pct*0.56)}px;background:${isToday?'var(--gold)':'rgba(245,200,66,0.3)'};"></div>
+      <div class="bar-day" style="${isToday?'color:var(--gold)':''}">${days[i]}</div>`;
+    chart.appendChild(col);
+  }
+}
+
+// =====================
+// STATS VIEW
+// =====================
+function renderStats() {
+  // Weekly
+  const el = document.getElementById('statsWeekly');
+  const cats = ['routine','habits','fitness','nutrition','work'];
+  const colors = {'routine':'var(--teal)','habits':'var(--gold)','fitness':'var(--orange)','nutrition':'var(--success)','work':'#a78bfa'};
+  const today = computeScores(state);
+  el.innerHTML = cats.map(c=>`
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span style="text-transform:capitalize;">${c}</span>
+        <span style="font-family:'JetBrains Mono';color:${colors[c]}">${today[c]}%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${today[c]}%;background:${colors[c]};height:6px;border-radius:99px;"></div></div>
+    </div>`).join('');
+
+  // EOD history
+  const eodEl = document.getElementById('statsEOD');
+  const histKeys = Object.keys(state.history).slice(-5).reverse();
+  if(histKeys.length === 0) {
+    eodEl.textContent = 'Complete your first End-of-Day review to see history here.';
+  } else {
+    eodEl.innerHTML = histKeys.map(k=>{
+      const s = state.history[k];
+      const overall = Math.round(Object.values(s).reduce((a,b)=>a+b,0)/Object.keys(s).length);
+      return `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;"><span>${k}</span><span style="font-family:'JetBrains Mono';color:var(--teal)">${overall}%</span></div>`;
+    }).join('');
+  }
+
+  // Top 3
+  const top3El = document.getElementById('statsTop3');
+  if(state.eod?.top3?.filter(Boolean).length) {
+    top3El.innerHTML = state.eod.top3.filter(Boolean).map((t,i)=>`
+      <div style="display:flex;gap:10px;padding:6px 0;">
+        <span style="font-family:'Bebas Neue';font-size:18px;color:var(--teal)">${i+1}</span>
+        <span style="font-size:13px;padding-top:2px;">${t}</span>
+      </div>`).join('');
+  } else {
+    top3El.textContent = "Set tomorrow's priorities in your End-of-Day review.";
+    top3El.style.color = 'var(--muted)';
+  }
+}
+
+// =====================
+// NAVIGATION
+// =====================
+function switchView(view) {
+  document.getElementById('main-view').classList.toggle('hidden', view !== 'home');
+  document.getElementById('stats-view').classList.toggle('active', view === 'stats');
+  ['home','stats'].forEach(v => {
+    document.getElementById(`nav-${v}`)?.classList.toggle('active', v === view);
+  });
+  if(view === 'stats') renderStats();
+}
+
+// =====================
+// PROFILE
+// =====================
+function openProfile() {
+  const p = state.profile;
+  if(p.name) document.getElementById('prof-name').value = p.name;
+  if(p.goal) document.getElementById('prof-goal').value = p.goal;
+  if(p.level) document.getElementById('prof-level').value = p.level;
+  if(p.equip) document.getElementById('prof-equip').value = p.equip;
+  if(p.days) document.getElementById('prof-days').value = p.days;
+  document.getElementById('profileModal').classList.add('open');
+}
+function closeProfile() { document.getElementById('profileModal').classList.remove('open'); }
+function saveProfile() {
+  state.profile = {
+    name: document.getElementById('prof-name').value,
+    goal: document.getElementById('prof-goal').value,
+    level: document.getElementById('prof-level').value,
+    equip: document.getElementById('prof-equip').value,
+    days: document.getElementById('prof-days').value
+  };
+  save(); updateSuggestions(); updateHeader(); closeProfile();
+  toast('Profile saved! Suggestions updated.');
+}
+
+// =====================
+// NOTIFICATIONS
+// =====================
+async function toggleNotifications() {
+  if(!('Notification' in window)) { toast('Notifications not supported'); return; }
+  if(Notification.permission === 'granted') {
+    state.notifications = !state.notifications;
+    save(); updateNotifBtn();
+    toast(state.notifications ? 'Reminders ON 🔔' : 'Reminders OFF');
+  } else {
+    const perm = await Notification.requestPermission();
+    if(perm === 'granted') {
+      state.notifications = true;
+      save(); updateNotifBtn();
+      toast('Reminders enabled! 🔔');
+    } else {
+      toast('Permission denied');
+    }
+  }
+}
+
+function updateNotifBtn() {
+  const btn = document.getElementById('notifBtn');
+  btn.classList.toggle('active', state.notifications);
+  btn.textContent = state.notifications ? '🔔 On' : '🔔 Alerts';
+}
+
+function scheduleReminders() {
+  updateNotifBtn();
+  setInterval(checkReminders, 60000);
+  checkReminders();
+}
+
+function checkReminders() {
+  if(!state.notifications || Notification.permission !== 'granted') return;
+  const h = new Date().getHours();
+  const m = new Date().getMinutes();
+  const sent = JSON.parse(sessionStorage.getItem('notifSent')||'{}');
+
+  const reminders = [
+    { key:'morning', h:7,  m:0,  msg:'🌅 Good morning! Start your daily routine.', body:'Open Command Center to kick off your day.' },
+    { key:'midday',  h:12, m:0,  msg:'☀️ Midday check-in!', body:'How are your work tasks going? Stay on track.' },
+    { key:'evening', h:18, m:0,  msg:'🌙 Time for your End-of-Day Review!', body:'Reflect on today and set tomorrow\'s priorities.' }
+  ];
+
+  reminders.forEach(r => {
+    if(h === r.h && m >= r.m && m < r.m+5 && !sent[r.key]) {
+      new Notification(r.msg, { body: r.body, icon: '⚡' });
+      sent[r.key] = true;
+      sessionStorage.setItem('notifSent', JSON.stringify(sent));
+    }
+  });
+}
+
+// =====================
+// TOAST
+// =====================
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && e.target.classList.contains('add-input')) {
+    const id = e.target.id;
+    if(id === 'input-routine') addItem('routine');
+    else if(id === 'input-habits') addItem('habits');
+    else if(id === 'input-work') addWorkTask();
+    else if(id === 'input-nutrition-do') addNutrition('do');
+    else if(id === 'input-nutrition-dont') addNutrition('dont');
+  }
+});
+
+// =====================
+// START
+// =====================
+init();
+</script>
+</body>
+</html>
